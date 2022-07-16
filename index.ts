@@ -14,7 +14,7 @@ import { convertToPaddedToken, NFTMetaData } from "./utils";
 import axios from "axios";
 import { NFTController } from "./backend/controllers/nftController";
 const fbController = new FirebaseController();
-const nftController = new NFTController(process.env.NFT_CONTRACT_ADDRESS);
+const nftController = new NFTController();
 let app = express();
 app.use(express.json());
 app.use(cors());
@@ -31,11 +31,6 @@ var job = cron.schedule("0 0 0 * * *", async function () {
     }
   });
 });
-const a = moment("2022-08-16T13:10:16.530Z");
-const b = moment("2022-09-16T13:10:16.530Z");
-console.log(a);
-console.log(b);
-console.log(b < a);
 const port = process.env.PORT || 3001;
 app.listen(port, function () {
   console.log("The server is running");

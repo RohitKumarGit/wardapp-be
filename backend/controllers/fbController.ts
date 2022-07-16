@@ -29,9 +29,10 @@ export class Product {
   isSold: boolean;
   token_id: number;
   brand_id: string;
+  image: string;
 }
 export class User {
-  products: string[]; // list of serial nos
+  products: (string | Product)[]; // list of serial nos
   name: string;
   phone: string; // key
   blockChainAddress: string;
@@ -65,8 +66,20 @@ export class FirebaseController {
     }
     console.log("saved token with hex id", paddedToken, " normal", tokenId);
   }
-  async getTokenIdFromBinId(tokenId: number) {
-    return await this.db.collection;
+  async uploadFile(fileName: string, file: any) {
+    await supabase.storage.from("nfts").upload(fileName, file, {
+      contentType: "image/jpeg",
+    });
+    console.log("uploaded image with name", fileName);
+  }
+  async mintToken(tokenId: number, serial_no: string) {
+    await this.db
+      .collection(constants.COLLECTIONS.TOKENS)
+      .doc(tokenId.toString())
+      .set({ tokenId, serial_no });
+  }
+  async getAllTokens() {
+    return await this.db.collection(constants.COLLECTIONS.TOKENS).get();
   }
   async updateJSON(tokenId: number, file) {}
   async listProduct(product: Product) {
@@ -90,26 +103,19 @@ export class FirebaseController {
     };
     const resp = this.db
       .collection(`${constants.COLLECTIONS.USERS}`)
-      .doc(user.phone);
-    if ((await resp.get()).exists) {
-    } else {
-      const resp = await this.db
-        .collection(`${constants.COLLECTIONS.USERS}`)
-        .doc(user.phone);
-      resp.set(userObj);
-    }
+      .doc(user.blockChainAddress);
+    await resp.set(userObj);
   }
   async updateUserInfo(updatedUser: User | any) {
-    console.log(updatedUser.phone);
     await this.db
       .collection(constants.COLLECTIONS.USERS)
-      .doc(updatedUser.phone)
+      .doc(updatedUser.blockChainAddress)
       .update(updatedUser);
   }
-  async getUser(phone) {
+  async getUser(blockChainAddress) {
     let doc = await this.db
       .collection(constants.COLLECTIONS.USERS)
-      .doc(phone)
+      .doc(blockChainAddress)
       .get();
     return doc.data() as User;
   }
@@ -122,5 +128,8 @@ export class FirebaseController {
   }
   async getAllProducts() {
     return await this.db.collection(constants.COLLECTIONS.PRODUCTS).get();
+  }
+  async getAllUsers() {
+    return await this.db.collection(constants.COLLECTIONS.USERS).get();
   }
 }
