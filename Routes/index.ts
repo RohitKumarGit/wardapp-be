@@ -30,6 +30,15 @@ export const docParser = function (products: any) {
   });
   return res;
 };
+const createGiftTokenForAUser = async (
+  user: User
+): Promise<{ hash: string }> => {
+  const { hash } = await nftController.createGiftTokenForAUser(
+    user.blockChainAddress
+  );
+  console.log(hash);
+  return hash;
+};
 router.post("/product", upload.single("image"), async (req: any, res) => {
   let product: any = {};
   console.log(req.body);
@@ -71,7 +80,12 @@ router.post("/nft", async (req, res) => {
   // phone and blockchain address are unique
   console.log("minting....", req.body);
   const metaData = new NFTMetaData(req.body);
-  const { tokenId, hash } = await nftController.mint(metaData);
+  const tokenId = Math.floor(Math.random() * 1000);
+  const { hash } = await nftController.mint(
+    metaData,
+    tokenId,
+    nftController.contractWithSigner
+  );
   await fbController.mintToken(tokenId, metaData.serial_No);
   const getUser = await fbController.getUser(req.body.blockChainAddress);
   const getProduct = await fbController.getProduct(metaData.serial_No);
@@ -89,7 +103,9 @@ router.post("/nft", async (req, res) => {
     serial_no: getProduct.serial_no,
   });
   console.log("Minted ", tokenId, "to account address", metaData.sold_to);
-  res.send({ productCreated: true, hash });
+  console.log("creating gift token for user", metaData.sold_to);
+  const giftHash = await createGiftTokenForAUser(getUser);
+  res.send({ productCreated: true, hash, giftHash });
 });
 const getProduct = async (serial_no) => {
   const product = await fbController.getProduct(serial_no);

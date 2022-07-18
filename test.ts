@@ -8,6 +8,6 @@ async function test() {
     phone: "1939010307123",
     blockChainAddress: "TEST",
   };
-  await fbController.registerUser(userObj);
+  await fbController.check("0x4491DE7aEEb874fB25F9011B0F03ab0F7C84D07AE");
 }
 test();

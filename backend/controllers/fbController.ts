@@ -6,7 +6,12 @@ import { Blob } from "node:buffer";
 import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { Firestore, getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
-import { convertToPaddedToken, getID, NFTMetaData } from "../../utils";
+import {
+  convertToPaddedToken,
+  getID,
+  NFTMetaData,
+  SouldBoundMetaData,
+} from "../../utils";
 import axios from "axios";
 import { constants } from "../constants";
 import * as dotenv from "dotenv";
@@ -36,11 +41,15 @@ export class User {
   name: string;
   phone: string; // key
   blockChainAddress: string;
+  address?: string;
+  email?: string;
   constructor(body) {
     this.products = [];
     this.name = body.name;
     this.phone = body.phone;
     this.blockChainAddress = body.blockChainAddress;
+    this.address = body.address;
+    this.email = body.email;
   }
 }
 export class Token {
@@ -52,7 +61,7 @@ export class FirebaseController {
   constructor() {
     this.db = getFirestore();
   }
-  async uploadJSON(tokenId: number, file: NFTMetaData) {
+  async uploadJSON(tokenId: number, file: NFTMetaData | SouldBoundMetaData) {
     const paddedToken = convertToPaddedToken(tokenId);
     var blob = Buffer.from(JSON.stringify(file), "utf-8");
     let resp = await supabase.storage
@@ -100,22 +109,37 @@ export class FirebaseController {
       name: user.name,
       phone: user.phone,
       blockChainAddress: user.blockChainAddress,
+      email: user.email ? user.email : null,
+      address: user.address ? user.address : null,
     };
     const resp = this.db
       .collection(`${constants.COLLECTIONS.USERS}`)
-      .doc(user.blockChainAddress);
-    await resp.set(userObj);
+      .doc(user.blockChainAddress.toLowerCase());
+    if ((await resp.get()).exists) {
+      delete userObj.products;
+      this.updateUserInfo(userObj);
+    } else {
+      await resp.set(userObj);
+    }
+  }
+  async check(address) {
+    const resp = await this.db
+      .collection(`${constants.COLLECTIONS.USERS}`)
+      .doc(address)
+      .get();
+    console.log(resp.exists);
+    console.log(resp);
   }
   async updateUserInfo(updatedUser: User | any) {
     await this.db
       .collection(constants.COLLECTIONS.USERS)
-      .doc(updatedUser.blockChainAddress)
+      .doc((updatedUser.blockChainAddress as string).toLowerCase())
       .update(updatedUser);
   }
   async getUser(blockChainAddress) {
     let doc = await this.db
       .collection(constants.COLLECTIONS.USERS)
-      .doc(blockChainAddress)
+      .doc(blockChainAddress.toLowerCase())
       .get();
     return doc.data() as User;
   }

@@ -6,9 +6,13 @@ import { BaseContract, ethers } from "ethers";
 import abi from "../../abi.json";
 import * as dotenv from "dotenv";
 import path from "path";
-import { NFTMetaData } from "../../utils";
+import { NFTMetaData, SouldBoundMetaData } from "../../utils";
 import config, { NETWORK } from "../../config";
 import { createAlchemyWeb3 } from "@alch/alchemy-web3";
+import { randomUUID } from "crypto";
+const getARandomNumber = (min, max) => {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+};
 
 dotenv.config({ path: path.resolve(__dirname, "..", "..", ".env") });
 // on product sale : mint , transfer , inform ,
@@ -17,6 +21,8 @@ export class NFTController {
   address: string;
   contract: any;
   contractWithSigner: any;
+  soulBoundContract: any;
+  soulBoundContractWithSigner: any;
   constructor() {
     this.address =
       config.CREDENTIALS[config.CURRENT_NETWORK].NFT_CONTRACT_ADDRESS;
@@ -26,9 +32,27 @@ export class NFTController {
       abi[constants.COLLECTION_NAME],
       provider
     );
+    console.log(config.CREDENTIALS[config.CURRENT_NETWORK]);
+    this.soulBoundContract = new ethers.Contract(
+      config.CREDENTIALS[config.CURRENT_NETWORK].SOULBOUNT_CONTRACT_ADDRESS,
+      abi["SoulBound"],
+      provider
+    );
     const privateKey = config.CREDENTIALS[config.CURRENT_NETWORK].PRIVATE_KEY;
     let wallet = new ethers.Wallet(privateKey, provider);
     this.contractWithSigner = this.contract.connect(wallet);
+    this.soulBoundContractWithSigner = this.soulBoundContract.connect(wallet);
+  }
+  createGiftTokenForAUser(userAddress) {
+    const randomNumber = getARandomNumber(1, 4);
+    const metaData = {
+      value: config.VOUCHER_VALUES[randomNumber],
+      created_date: new Date().toISOString(),
+      sold_to: userAddress,
+      id: randomUUID,
+      tokenId: randomNumber,
+    };
+    return this.mint(metaData, randomNumber, this.soulBoundContractWithSigner);
   }
   getProvider(net: NETWORK) {
     if (net === NETWORK.HARDHAT) {
@@ -41,16 +65,10 @@ export class NFTController {
     }
   }
   jsonCreator() {}
-  async mint(metaData: NFTMetaData) {
-    const tokenId = Math.floor(Math.random() * 1000);
-    console.log("meta data", metaData);
+  async mint(metaData: NFTMetaData | SouldBoundMetaData, tokenId, contract) {
     await firebaseController.uploadJSON(tokenId, metaData);
-    const det = await this.contractWithSigner.mint(
-      metaData.sold_to,
-      tokenId,
-      1
-    );
-    return { tokenId, hash: det.hash };
+    const det = await contract.mint(metaData.sold_to, tokenId, 1);
+    return { hash: det.hash };
   }
   async transfer(userAddr: string, tokenId: number) {
     await this.contractWithSigner.transfer(
@@ -68,7 +86,7 @@ export class NFTController {
     return await this.contract.uri(1);
   }
   async burn(from: string, tokenId: number, amount = 1) {
-    await this.contractWithSigner.burn(from, tokenId, amount);
+    return await this.contractWithSigner.burn(from, tokenId, amount);
   }
 }
 // 557

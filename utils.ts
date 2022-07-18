@@ -26,3 +26,15 @@ export class Deewarr {
   mint() {}
   transfer() {}
 }
+export class SouldBoundMetaData {
+  value: any;
+  created_date: string;
+  sold_to: any;
+  tokenId: any;
+  constructor(data) {
+    this.value = data.value;
+    this.created_date = data.created_date;
+    this.sold_to = data.sold_to;
+    this.tokenId = data.tokenId;
+  }
+}
