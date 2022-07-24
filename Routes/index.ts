@@ -129,6 +129,11 @@ router.get("/user", async (req: any, res) => {
   console.log(user);
   res.send(user);
 });
+router.get("/product", async (req, res) => {
+  console.log(req.query);
+  const product = await getProduct(req.query.serial_no);
+  res.send(product);
+});
 router.get("/allusers", async (req, res) => {
   const users = docParser(await fbController.getAllUsers()) as any[];
   console.log(users);
