@@ -6,7 +6,7 @@
   "scripts": {
     "run": "cd dist && node index.js",
     "start": "npm run build && npm run run",
-    "build": "tsc && cp .env ./dist/.env  && cp key.json ./dist/key.json  && cp abi.json ./dist/abi.json"
+    "build": "tsc && cp key.json ./dist/key.json  && cp abi.json ./dist/abi.json"
   },
   "dependencies": {
     "@alch/alchemy-web3": "^1.4.4",
