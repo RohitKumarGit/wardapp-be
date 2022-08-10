@@ -113,6 +113,9 @@ const getProduct = async (serial_no) => {
 };
 router.get("/user", async (req: any, res) => {
   let user = (await fbController.getUser(req.query.address)) as User;
+  if (!user) {
+    res.send({ error: true });
+  }
   console.log(user);
   user.products = await Promise.all(
     user.products.map(async (stringValue) => {
